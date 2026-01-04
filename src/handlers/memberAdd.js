@@ -2,24 +2,23 @@
 
 const db = require('../db');
 
-/**
- * Handle auto-role assignment when a member joins a guild.
- * The role is configured per guild in the database.
- */
 async function handleMemberAdd(member) {
-  const row = db
-    .prepare('SELECT auto_role_id FROM guild_settings WHERE guild_id = ?')
-    .get(member.guild.id);
+  const rows = db
+    .prepare('SELECT role_id FROM guild_autoroles WHERE guild_id = ?')
+    .all(member.guild.id);
 
-  if (!row || !row.auto_role_id) return;
+  if (!rows.length) return;
 
-  const role = member.guild.roles.cache.get(row.auto_role_id);
-  if (!role) return;
+  const rolesToAdd = rows
+    .map((r) => member.guild.roles.cache.get(r.role_id))
+    .filter(Boolean);
+
+  if (!rolesToAdd.length) return;
 
   try {
-    await member.roles.add(role, 'Auto role on join');
+    await member.roles.add(rolesToAdd, 'Auto roles on join');
   } catch (error) {
-    console.error('[memberAdd] Failed to add auto role:', error);
+    console.error('[memberAdd] Failed to add auto roles:', error);
   }
 }
 
