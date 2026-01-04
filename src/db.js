@@ -9,12 +9,19 @@ const Database = require('better-sqlite3');
  */
 const db = new Database('bot.sqlite');
 
-// Auto-role per guild (server)
+// Auto-roles per guild (multiple)
 db.exec(`
-  CREATE TABLE IF NOT EXISTS guild_settings (
-    guild_id TEXT PRIMARY KEY,
-    auto_role_id TEXT
+  CREATE TABLE IF NOT EXISTS guild_autoroles (
+    guild_id TEXT NOT NULL,
+    role_id  TEXT NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    PRIMARY KEY (guild_id, role_id)
   );
+`);
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_guild_autoroles_guild
+  ON guild_autoroles(guild_id);
 `);
 
 // Panels
