@@ -2,8 +2,31 @@
 
 A Discord bot for role management (auto-roles, panels, buttons) built with **discord.js**, **slash commands**, and **SQLite**.
 
-This README covers **command-line / shell deployment only**.  
-Plesk is **not** covered.
+This README covers **command-line / shell deployment only**.
+
+---
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Recommended Project Structure](#recommended-project-structure)
+- [Discord Setup (Required)](#discord-setup-required)
+- [Environment Configuration](#environment-configuration)
+- [SQLite Database Initialization](#sqlite-database-initialization)
+- [Database Schema](#database-schema)
+- [Install Dependencies](#install-dependencies)
+- [Load Environment Variables (Important)](#load-environment-variables-important)
+- [Register Slash Commands](#register-slash-commands)
+- [Run the Bot with PM2](#run-the-bot-with-pm2-local-install)
+- [Restarting the Bot](#restarting-the-bot)
+- [Invite the Bot to a Server](#invite-the-bot-to-a-server-required)
+- [Auto Roles](#auto-roles)
+- [Security & Permissions](#security--permissions)
+- [Functional Flow](#functional-flow)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Final Checklist](#final-checklist)
+- [License](#license)
 
 ---
 
@@ -97,21 +120,34 @@ sqlite3 shared/data/bot.db "PRAGMA user_version=1;"
 
 ---
 
-## Install Dependencies
+## Database Schema
 
-From the project root:
+The bot uses a lightweight **SQLite** database.
+
+### `guild_autoroles`
+
+Stores the list of roles automatically assigned when a member joins a server.
+
+```sql
+CREATE TABLE guild_autoroles (
+  guild_id   TEXT NOT NULL,
+  role_id    TEXT NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  PRIMARY KEY (guild_id, role_id)
+);
+```
+
+---
+
+## Install Dependencies
 
 ```bash
 npm install --omit=dev
 ```
 
-This will generate `node_modules/` and `package-lock.json`.
-
 ---
 
 ## Load Environment Variables (Important)
-
-For **every new shell session**:
 
 ```bash
 set -a
@@ -119,80 +155,105 @@ source shared/.env
 set +a
 ```
 
-Verify without exposing secrets:
+Verification:
 ```bash
 node -e "const t=process.env.DISCORD_TOKEN||''; console.log('token_len', t.length, 'has_space', /\s/.test(t));"
-```
-
-Expected:
-```text
-token_len > 50
-has_space false
 ```
 
 ---
 
 ## Register Slash Commands
 
-Run once at first deploy and whenever commands change:
-
 ```bash
 npm run register
-```
-
-Expected:
-```text
-[register] Slash commands registered
 ```
 
 ---
 
 ## Run the Bot with PM2 (Local Install)
 
-### Install PM2 locally
 ```bash
 npm install pm2 --save-prod
-```
-
-### Start the bot
-```bash
 npx pm2 start src/index.js --name discord-role-bot --time
 npx pm2 save
-```
-
-### Status and logs
-```bash
-npx pm2 status
-npx pm2 logs discord-role-bot
 ```
 
 ---
 
 ## Restarting the Bot
 
-If `.env` changed:
 ```bash
 npx pm2 restart discord-role-bot --update-env
-```
-
-Otherwise:
-```bash
-npx pm2 restart discord-role-bot
 ```
 
 ---
 
 ## Invite the Bot to a Server (Required)
 
-The bot **never joins a server automatically**.
-
-Minimal invite URL:
 ```text
 https://discord.com/api/oauth2/authorize?client_id=DISCORD_CLIENT_ID&scope=bot%20applications.commands&permissions=268435456
 ```
 
-- `applications.commands` → slash commands
-- `Manage Roles` permission required for role assignment
+---
+
+## Auto Roles
+
+The bot supports **multiple auto roles per server**.
+
+Commands:
+- `/autorole add role:@Member`
+- `/autorole remove role:@Newsletter`
+- `/autorole list`
+- `/autorole clear`
+- `/autorole set role:@Member`
+
+---
+
+## Security & Permissions
+
+### Required Discord Permissions
+The bot requires the following permissions:
+- **Manage Roles** — assign and remove roles
+- **View Channels** — respond to slash commands
+- **Send Messages** — send feedback and panel messages
+
+### Role Hierarchy
+- The bot’s role **must be higher** than any role it assigns
+- The bot **cannot** assign roles above its own role
+
+### Gateway Intents
+Minimal recommended intents:
+- `Guilds`
+- `GuildMembers`
+
+Avoid enabling unnecessary privileged intents to reduce attack surface.
+
+### Secrets Handling
+- Never commit `.env` files
+- Rotate the bot token immediately if leaked
+- Use restrictive file permissions (`chmod 600`)
+
+---
+
+## Functional Flow
+
+### Member Join Flow
+1. A new member joins the server
+2. Discord emits a `guildMemberAdd` event
+3. The bot queries `guild_autoroles`
+4. All configured roles are assigned to the member
+
+### Auto Role Management Flow
+1. Admin runs `/autorole add/remove`
+2. Bot validates permissions
+3. Role IDs are stored or removed from SQLite
+4. Configuration is immediately effective
+
+### Slash Command Flow
+1. User invokes a slash command
+2. Discord validates permissions
+3. Bot executes the handler
+4. Bot responds (ephemeral or public)
 
 ---
 
@@ -272,16 +333,22 @@ or use **Node 20 LTS**.
 
 ---
 
+## Contributing
+
+This project is currently in **early testing phase**.
+
+---
+
 ## Final Checklist
 
-- [ ] Bot invited to the server
-- [ ] `.env` clean (no whitespace)
-- [ ] `npm run register` successful
-- [ ] `pm2 status` → online
-- [ ] Bot visible and online on Discord
-- [ ] Slash commands visible (`/panel`, etc.)
+- [ ] Bot invited
+- [ ] Permissions correct
+- [ ] `.env` secured
+- [ ] Slash commands registered
+- [ ] Bot online
 
 ---
 
 ## License
-MIT
+
+MIT License
