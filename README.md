@@ -1,7 +1,8 @@
 # Discord Role Bot
 
-A simple and safe Discord bot to automatically assign roles to new members  
-and let users self-assign roles via interactive panels.
+A simple and safe Discord bot to automatically assign roles to new members and let users self-assign roles via interactive panels.
+
+*This is my first Discord bot project, and I am using AI to assist me with the development.*
 
 ---
 
