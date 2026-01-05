@@ -204,8 +204,6 @@ Commands:
 - `/autorole add role:@Member`
 - `/autorole remove role:@Newsletter`
 - `/autorole list`
-- `/autorole clear`
-- `/autorole set role:@Member`
 
 ---
 
